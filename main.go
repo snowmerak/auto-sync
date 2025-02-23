@@ -17,7 +17,6 @@ import (
 
 func init() {
 	// zerolog initialization
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
 	output.FormatLevel = func(i interface{}) string {
 		return strings.ToUpper(fmt.Sprintf("| %-6s|", i))
@@ -37,15 +36,30 @@ func init() {
 	// flag initialization
 	path = flag.String("path", ".", "path to watch")
 	device = flag.String("device", "my-device", "device name")
+	level = flag.String("level", "off", "log level: debug, info, warn, error, off")
 	flag.Parse()
 }
 
 var (
 	path   *string
 	device *string
+	level  *string
 )
 
 func main() {
+	switch *level {
+	case "debug":
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	case "info":
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	case "warn":
+		zerolog.SetGlobalLevel(zerolog.WarnLevel)
+	case "error":
+		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	default:
+		zerolog.SetGlobalLevel(zerolog.FatalLevel)
+	}
+
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 	_ = ctx
@@ -118,12 +132,6 @@ func main() {
 }
 
 // Git Execution
-
-type nullWriter struct{}
-
-func (nullWriter) Write(p []byte) (int, error) {
-	return len(p), nil
-}
 
 func executeCommand(dir string, command string, args ...string) error {
 	cmd := exec.Command(command, args...)
