@@ -64,6 +64,10 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to add watch")
 	}
 
+	if err := gitPull(*path); err != nil {
+		log.Fatal().Err(err).Str("path", *path).Msg("failed to pull")
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -71,10 +75,10 @@ func main() {
 			return
 		case event, ok := <-wc.Events:
 			if !ok {
-				log.Error().Msg("watcher events channel closed")
+				log.Error().Any("event", event).Msg("watcher events channel closed")
 				return
 			}
-			log.Info().Str("event", event.String()).Str("name", event.Name).Msg("event received")
+			log.Info().Any("event", event).Str("name", event.Name).Msg("event received")
 
 			if err := gitPull(*path); err != nil {
 				log.Error().Err(err).Msg("failed to pull")
