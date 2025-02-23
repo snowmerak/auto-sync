@@ -68,6 +68,7 @@ func main() {
 		log.Fatal().Err(err).Str("path", *path).Msg("failed to pull")
 	}
 
+	prevChangeTime := time.Now()
 	for {
 		select {
 		case <-ctx.Done():
@@ -78,11 +79,18 @@ func main() {
 				log.Error().Any("event", event).Msg("watcher events channel closed")
 				return
 			}
+
+			if time.Since(prevChangeTime) < 5*time.Second {
+				log.Info().Msg("skip event")
+				continue
+			}
+
+			prevChangeTime = time.Now()
+
 			log.Info().Any("event", event).Str("name", event.Name).Msg("event received")
 
 			if err := gitPull(*path); err != nil {
 				log.Error().Err(err).Msg("failed to pull")
-				continue
 			}
 
 			if err := gitAddAll(*path); err != nil {
